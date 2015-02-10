@@ -1,0 +1,162 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+				var socketio = io.connect(),
+					chat_log = document.getElementById('chat_log'),
+					message_button = document.getElementById('message_button'),
+					message = document.getElementById('message'),
+					users = document.getElementById('users-append');
+				var user_name = "";
+				do {
+					user_name = prompt('Digite seu nome');
+				} while(user_name.trim().length === 0);
+				socketio.emit('user_connected', user_name);
+				var add = function (data) {
+					var message, message_text, user_name, time;
+					message = document.createElement('div');
+					message_text = document.createElement('div');
+					user_name = document.createElement('span');
+					
+					message.setAttribute('class','message');
+					message_text.setAttribute('class', 'message-text');
+					user_name.setAttribute('class','user-name');
+					
+					message_text.appendChild(document.createTextNode(data.message));
+					user_name.appendChild(document.createTextNode(data.name));
+					user_name.appendChild(document.createTextNode(" diz:"));
+					message.appendChild(user_name);
+					message.appendChild(message_text);
+					chat_log.appendChild(message);
+					chat_log.scrollTop = 124141;
+				};
+				var empty = function (nodeRef) {
+					while (nodeRef.firstChild) {
+						nodeRef.removeChild(nodeRef.firstChild);
+					}
+				};
+				socketio.on('message_to_client', function (data){
+					add(data);
+				});
+				socketio.on('update_users', function (data) {
+					console.log(data);
+					var ul = document.createElement('ul');
+					for(var i = 0, l = data.length; i < l; i++){
+						var li = document.createElement('li');
+						li.textContent = data[i];
+						ul.appendChild(li);
+					}
+					empty(users);
+					users.appendChild(ul);
+				});
+				message_button.onclick = function () {
+					var value = message.value;
+					if(value.length > 0){
+						socketio.emit('message_to_server', {
+							message: value, 
+							name: user_name
+						});
+						message.value = '';
+					}
+					message.focus();
+				};
+				message.onkeypress = function (e) {
+					var key = e.which || e.keyCode;
+					if(key === 13){
+						message_button.click();
+					}
+				};
+				message.focus();
+			});
+		</script>
+		<style>
+			#chat_log {
+				overflow: auto;
+				height: 25em;
+				border: 2px solid #000;
+				background: rgba(204, 204, 204, 0.61);
+				font-size: 20px;
+				margin-bottom: 15px;
+			}
+			#users {
+				width: 15em;
+				font-size: 20px;
+			}
+			
+			#users ul {
+				list-style: none;
+			}
+			#users ul li {
+				border: 1px solid rgba(78, 78, 78, 0.33);
+				margin-bottom: 6px;
+				margin-right: 9px;
+				padding: 4px;
+			}
+			.message {
+				margin: 8px 1px;
+			}
+			.message, .message-text {
+				margin-left: 15px;
+			}
+			.message-text:before {
+				content: "- ";
+			}
+			.user-name {
+				font-weight: bold;
+				color: rgb(196, 115, 69);
+			}
+			.left {
+				float: left;
+			}
+			.right {
+				float: right;
+				margin-left: 15px;
+			}
+			.clear {
+				clear: both;
+			}
+			.header {
+				font-size: 9em;
+				font-family: monospace;
+			}
+			.button-wrapper {
+				margin-top: 15px;
+			}
+			.button {
+				background-color: rgba(133, 133, 133, 0.69);
+				height: 2em;
+				font-size: 16px;
+				padding: 0 3em;
+			}
+			body {
+				background: rgba(238, 238, 238, 0.84);
+			}
+			footer {
+				margin-top: 15px;
+				font-size: 16px;
+				font-style: italic;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="header">nodechat</div>
+		<div class="right">
+			<div id="users">
+				<span class="">Atualmente online</span>
+				<div id="users-append"></div>
+			</div>
+		</div>
+		<div id="chat_log"></div>
+		<div class="client-area">
+			<div>
+				<textarea id="message"></textarea>
+			</div>
+			<div class="button-wrapper">
+				<button id="message_button" class="button">Enviar</button>
+			</div>
+		</div>
+		<footer>Desenvolvido com amor, carinho e <a href="http://nodejs.org/">node.js</a>.</footer>
+	</body>
+</html>

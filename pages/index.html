@@ -1,0 +1,91 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			document.addEventListener("DOMContentLoaded", function () {
+				var socketio = io.connect(),
+					chat_log = document.getElementById('chat_log'),
+					message_button = document.getElementById('message_button'),
+					message = document.getElementById('message');
+				var user_name;
+					
+				do {
+					user_name = prompt('Digite seu nome');
+				} while(user_name.trim().length === 0);
+					
+				var add = function (data) {
+					var message, message_text, user_name, time;
+					message = document.createElement('div');
+					message_text = document.createElement('div');
+					user_name = document.createElement('span');
+					
+					message.setAttribute('class','message');
+					message_text.setAttribute('class', 'message-text');
+					user_name.setAttribute('class','user-name');
+					
+					message_text.appendChild(document.createTextNode(data.message));
+					user_name.appendChild(document.createTextNode(data.name));
+					user_name.appendChild(document.createTextNode(" diz:"));
+					message.appendChild(user_name);
+					message.appendChild(message_text);
+					message.appendChild(document.createTextNode("Mensagem enviada às " + new Date(data.time).toString().substring(16, 24)));
+					chat_log.appendChild(message);
+					chat_log.scrollTop = 124141;
+				};
+				socketio.on("message_to_client", function (data){
+					add(data);
+				});
+				message_button.onclick = function () {
+					var value = message.value;
+					if(value.length > 0){
+						socketio.emit("message_to_server", {
+							message: value, 
+							name: user_name,
+							time: (new Date()).getTime()
+						});
+						message.value = '';
+						message.focus();
+					}
+				};
+				message.onkeypress = function (e) {
+					var key = e.which || e.keyCode;
+					if(key === 13){
+						message_button.click();
+					}
+				};
+				message.focus();
+			});
+		</script>
+		<style>
+			#chat_log {
+				overflow: auto;
+				height: 25em;
+				border: 2px solid #000;
+				background: rgba(204, 204, 204, 0.61);
+				font-size: 20px;
+				margin-bottom: 15px;
+			}
+			.message {
+				margin: 8px 1px;
+			}
+			.message, .message-text {
+				margin-left: 15px;
+			}
+			.message-text:before {
+				content: "- ";
+			}
+			.user-name {
+				font-weight: bold;
+				color: rgb(196, 115, 69);
+			}
+		</style>
+	</head>
+	<body>
+		<div id="chat_log"></div>
+		<div>
+			<input type="text" id="message" />
+			<button id="message_button">Enviar</button>
+		</div>
+	</body>
+</html>
